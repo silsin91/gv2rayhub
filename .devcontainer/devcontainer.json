@@ -16,10 +16,10 @@
     }
   },
 
-  "postStartCommand": "chmod +x /workspaces/g2ray/watch.sh /workspaces/g2ray/start_services.sh /workspaces/g2ray/usage-agent.sh /workspaces/g2ray/install-traffic-agent.sh",
+  "postStartCommand": "chmod +x ./.devcontainer/install.sh ./watch.sh ./start_services.sh ./usage-agent.sh ./install-traffic-agent.sh",
 
   "postAttachCommand": {
-    "setup": "sudo bash -c 'cp /workspaces/g2ray/.devcontainer/config.json /etc/config.json || true' && TRAFFIC_API_URL='http://141.11.18.186:3010/api/traffic/push' TRAFFIC_TOKEN='change_me_traffic_token' TRAFFIC_INTERVAL=10 XRAY_INBOUND_TAG='vless-in' /workspaces/g2ray/install-traffic-agent.sh && /workspaces/g2ray/start_services.sh"
+    "setup": "sudo bash -c 'cp ./.devcontainer/config.json /etc/config.json || true' && TRAFFIC_API_URL='http://141.11.18.186:3010/api/traffic/push' TRAFFIC_TOKEN='change_me_traffic_token' TRAFFIC_INTERVAL=10 XRAY_INBOUND_TAG='vless-in' ./install-traffic-agent.sh && ./start_services.sh"
   },
 
   "portsAttributes": {
