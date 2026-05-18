@@ -1,0 +1,52 @@
+name: Keep Codespace Alive
+
+on:
+  schedule:
+    # Run every 3 hours to restart before the 4-hour max timeout
+    - cron: "0 */3 * * *"
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install GitHub CLI
+        run: type -p gh >/dev/null || (sudo apt update && sudo apt install gh -y)
+
+      - name: Start or Wake up Codespace
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "Error: GH_PAT_TOKEN secret is missing. Please create a Personal Access Token with 'codespace' permissions."
+            exit 1
+          fi
+          
+          # Find the existing codespace for this repo
+          CS_NAME=$(gh codespace list --repo ${{ github.repository }} --json name -q '.[0].name')
+          
+          if [ -z "$CS_NAME" ]; then
+            echo "No codespace found. You need to create one manually first."
+            exit 1
+          fi
+          
+          echo "Found codespace: $CS_NAME. Checking status..."
+          
+          STATE=$(gh codespace view -c $CS_NAME --json state -q '.state')
+          
+          if [ "$STATE" != "Available" ]; then
+            echo "Codespace is $STATE. Waking it up..."
+            # This will start the codespace, triggering postAttachCommand
+            # which runs start_services.sh -> generates UUID -> sends Telegram msg
+            gh codespace ssh -c $CS_NAME -- echo "Codespace restarted by GitHub Actions"
+          else
+            echo "Codespace is already running. Forcing restart to renew link..."
+            gh codespace stop -c $CS_NAME
+            sleep 10
+            gh codespace ssh -c $CS_NAME -- echo "Codespace restarted by GitHub Actions"
+          fi
+          
+          echo "Done! Check your Telegram for the new VLESS link."
