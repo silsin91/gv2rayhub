@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_DIR="${PROJECT_DIR:-/workspaces/g2ray}"
+PROJECT_DIR="$(pwd)"
 TRAFFIC_API_URL="${TRAFFIC_API_URL:-}"
 TRAFFIC_TOKEN="${TRAFFIC_TOKEN:-}"
 TRAFFIC_INTERVAL="${TRAFFIC_INTERVAL:-10}"

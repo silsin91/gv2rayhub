@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
 
-PROJECT_DIR="${PROJECT_DIR:-/workspaces/g2ray}"
+# Automatically detect the current directory instead of hardcoding /workspaces/g2ray
+PROJECT_DIR="$(pwd)"
 CONFIG_FILE="/etc/config.json"
+
+# Make sure config file exists, if not copy it
+if [ ! -f "$CONFIG_FILE" ]; then
+    sudo cp "$PROJECT_DIR/.devcontainer/config.json" "$CONFIG_FILE" || true
+fi
 
 # 1. Dynamic UUID Generation & Update Config
 if grep -q "550e8400-e29b-41d4-a716-446655440000" "$CONFIG_FILE"; then
     NEW_UUID=$(cat /proc/sys/kernel/random/uuid)
-    sed -i "s/550e8400-e29b-41d4-a716-446655440000/$NEW_UUID/g" "$CONFIG_FILE"
+    sudo sed -i "s/550e8400-e29b-41d4-a716-446655440000/$NEW_UUID/g" "$CONFIG_FILE"
     echo "Generated new dynamic UUID: $NEW_UUID"
 else
     # Extract existing UUID if already changed
@@ -35,14 +41,25 @@ if [ -n "$TG_BOT_TOKEN" ] && [ -n "$TG_CHAT_ID" ]; then
 *Link:*
 \`${VLESS_LINK}\`"
         
-        curl -s -X POST "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage" \
+        # Add output to know if it's trying to send
+        echo "Sending VLESS link to Telegram (Chat ID: $TG_CHAT_ID)..."
+        
+        RESPONSE=$(curl -s -X POST "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage" \
             -d chat_id="${TG_CHAT_ID}" \
             -d text="${MSG}" \
-            -d parse_mode="Markdown" > /dev/null
+            -d parse_mode="Markdown")
             
-        touch /tmp/telegram_sent
-        echo "VLESS link sent to Telegram."
+        if echo "$RESPONSE" | grep -q '"ok":true'; then
+            touch /tmp/telegram_sent
+            echo "✅ VLESS link successfully sent to Telegram."
+        else
+            echo "❌ Failed to send to Telegram. Response: $RESPONSE"
+        fi
+    else
+        echo "Telegram message already sent for this session."
     fi
+else
+    echo "⚠️ TG_BOT_TOKEN or TG_CHAT_ID not set. Telegram notification skipped."
 fi
 
 # 4. Stop existing services cleanly
